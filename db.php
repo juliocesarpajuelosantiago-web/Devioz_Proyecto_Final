@@ -1,6 +1,6 @@
 <?php
 // Credenciales estándar de XAMPP
-$servidor = "localhost";
+$servidor = "db";   // ← de "localhost" a "db"
 $usuario  = "root";
 $password = ""; 
 $base_datos = "devioz_db";

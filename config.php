@@ -1,5 +1,5 @@
 <?php
-$host = "localhost";
+$host = "db";       // ← de "localhost" a "db"
 $user = "root";
 $pass = ""; // En XAMPP por defecto está vacío
 $db   = "devioz_db";
