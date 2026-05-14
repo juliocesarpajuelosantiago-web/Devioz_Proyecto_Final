@@ -1,0 +1,31 @@
+# El nombre de este proceso automático
+name: Publicar en Docker Hub
+
+# ¿CUÁNDO se va a ejecutar?
+on:
+  push:
+    branches: [ "main" ] # Solo cuando hagas "push" a la rama main
+
+# ¿QUÉ va a hacer? (Los trabajos o 'jobs')
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest # GitHub nos presta una computadora con Linux gratis para hacer esto
+    
+    steps: # Los pasos que seguirá esa computadora:
+      
+      - name: Checkout del código
+        uses: actions/checkout@v3 # 1. Copia tu código de GitHub a esa computadora temporal
+
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v2 # 2. Entra a Docker Hub usando las llaves (Secrets) que guardamos
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Construir y subir imagen
+        uses: docker/build-push-action@v4 # 3. Lee tu Dockerfile, crea la imagen y la sube
+        with:
+          context: .
+          push: true
+          # El nombre con el que aparecerá en tu Docker Hub
+          tags: devopsjulio/devioz-proyecto:latest
