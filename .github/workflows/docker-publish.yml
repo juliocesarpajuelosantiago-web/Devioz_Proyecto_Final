@@ -29,3 +29,9 @@ jobs:
           push: true
           # El nombre con el que aparecerá en tu Docker Hub
           tags: devopsjulio/devioz-proyecto:latest
+          
+      - name: Instalar HTMLHint
+        run: npm install -g htmlhint
+
+      - name: Ejecutar Linter HTMLHint
+        run: htmlhint **/*.html
