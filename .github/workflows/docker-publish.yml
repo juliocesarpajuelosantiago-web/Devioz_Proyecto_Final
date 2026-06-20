@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          push: false # No la sube aún, primero se analiza
+          push: true # No la sube aún, primero se analiza
           tags: devopsjulio/devioz-proyecto:latest
 
       # 6. SEGURIDAD DE INFRAESTRUCTURA (Trivy): Escanea virus o fallos críticos en la imagen

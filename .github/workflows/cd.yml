@@ -1,0 +1,31 @@
+name: Deploy Automático en AWS
+
+on:
+  workflow_run:
+    workflows: ["docker-publish.yml"] # Se activa al finalizar tu proceso de CI
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Solo se ejecuta si el proceso anterior (docker-publish.yml) fue exitoso
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Desplegar en servidor vía SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            # 1. Descarga la nueva imagen actualizada desde Docker Hub
+            docker pull devopsjulio/devioz-proyecto:latest
+            
+            # 2. Detiene y elimina el contenedor anterior si existe
+            docker stop mi-sitio || true
+            docker rm mi-sitio || true
+            
+            # 3. Lanza la nueva versión del contenedor
+            # Mapeamos el puerto 80 del servidor al puerto 80 del contenedor
+            docker run -d -p 80:80 --name mi-sitio devopsjulio/devioz-proyecto:latest
