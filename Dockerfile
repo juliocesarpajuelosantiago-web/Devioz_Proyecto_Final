@@ -1,5 +1,5 @@
 # Usamos una imagen ligera de PHP 8.1 con Apache
-FROM php:8.1-apache-alpine
+FROM php:8.1-alpine
 
 # Instalamos las extensiones necesarias para que PHP se comunique con MySQL
 # Esto es vital para que tu db.php funcione dentro del contenedor
