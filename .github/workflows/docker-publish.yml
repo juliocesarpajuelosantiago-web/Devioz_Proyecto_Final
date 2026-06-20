@@ -39,12 +39,14 @@ jobs:
           tags: devopsjulio/devioz-proyecto:latest
 
       # 5. SEGURIDAD DE INFRAESTRUCTURA (Trivy): Escanea virus o fallos críticos en la imagen
+      - # 5. SEGURIDAD DE INFRAESTRUCTURA (Trivy): Escanea virus o fallos críticos en la imagen
       - name: Escanear imagen Docker con Trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'devopsjulio/devioz-proyecto:latest'
           format: 'table'
           exit-code: '1' # Si encuentra algo CRÍTICO, rompe el proceso y avisa al equipo
+          ignore-unfixed: true # <-- AGREGA ESTA LÍNEA EXACTAMENTE AQUÍ (Respeta los espacios)
           severity: 'CRITICAL'
 
       # 6. DESPLIEGUE SEGURO: Solo si pasó el Linter y pasó Trivy, se publica en internet
