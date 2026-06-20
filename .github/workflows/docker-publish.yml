@@ -9,29 +9,48 @@ on:
 # ¿QUÉ va a hacer? (Los trabajos o 'jobs')
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest # GitHub nos presta una computadora con Linux gratis para hacer esto
+    runs-on: ubuntu-latest # GitHub nos presta una computadora con Linux gratis
     
-    steps: # Los pasos que seguirá esa computadora:
-      
+    steps:
+      # 1. Copia tu código de GitHub a la máquina virtual
       - name: Checkout del código
-        uses: actions/checkout@v3 # 1. Copia tu código de GitHub a esa computadora temporal
+        uses: actions/checkout@v3
 
-      - name: Iniciar sesión en Docker Hub
-        uses: docker/login-action@v2 # 2. Entra a Docker Hub usando las llaves (Secrets) que guardamos
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Construir y subir imagen
-        uses: docker/build-push-action@v4 # 3. Lee tu Dockerfile, crea la imagen y la sube
-        with:
-          context: .
-          push: true
-          # El nombre con el que aparecerá en tu Docker Hub
-          tags: devopsjulio/devioz-proyecto:latest
-          
+      # 2. CALIDAD DE CÓDIGO (Linter): Revisa errores y avisa la línea exacta del fallo
       - name: Instalar HTMLHint
         run: npm install -g htmlhint
 
       - name: Ejecutar Linter HTMLHint
         run: htmlhint **/*.html
+
+      # 3. AUTENTICACIÓN SEGURA: Inicia sesión en Docker Hub usando tus llaves ocultas
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 4. CONSTRUCCIÓN DE LA IMAGEN LOCAL: La prepara en la máquina de GitHub para evaluarla
+      - name: Construir imagen local para pruebas
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: false # No la sube aún, primero se analiza
+          tags: devopsjulio/devioz-proyecto:latest
+
+      # 5. SEGURIDAD DE INFRAESTRUCTURA (Trivy): Escanea virus o fallos críticos en la imagen
+      - name: Escanear imagen Docker con Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'devopsjulio/devioz-proyecto:latest'
+          format: 'table'
+          exit-code: '1' # Si encuentra algo CRÍTICO, rompe el proceso y avisa al equipo
+          severity: 'CRITICAL'
+
+      # 6. DESPLIEGUE SEGURO: Solo si pasó el Linter y pasó Trivy, se publica en internet
+      - name: Subir imagen limpia a Docker Hub
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: devopsjulio/devioz-proyecto:latest
