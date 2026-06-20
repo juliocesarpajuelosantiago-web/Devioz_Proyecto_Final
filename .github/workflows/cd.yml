@@ -2,7 +2,7 @@ name: Deploy Automático en AWS
 
 on:
   workflow_run:
-    workflows: ["docker-publish.yml"] # Se activa al finalizar tu proceso de CI
+    workflows: ["Publicar en Docker Hub"] # Se activa al finalizar tu proceso de CI
     types:
       - completed
 
