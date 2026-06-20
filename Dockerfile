@@ -3,7 +3,7 @@ FROM php:8.1-alpine
 
 # Instalamos las extensiones necesarias para que PHP se comunique con MySQL
 # Esto es vital para que tu db.php funcione dentro del contenedor
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 # Habilitamos el módulo rewrite de Apache (común en servidores profesionales)
 RUN a2enmod rewrite
