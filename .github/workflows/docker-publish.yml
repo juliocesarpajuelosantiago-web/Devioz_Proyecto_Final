@@ -1,58 +1,40 @@
-# El nombre de este proceso automático
-name: Publicar en Docker Hub
+name: Publicar en Docker Hub # Nombre del workflow CI
 
-# ¿CUÁNDO se va a ejecutar?
 on:
   push:
-    branches: [ "main" ] # Solo cuando hagas "push" a la rama main
+    branches: [ "main" ] # Se ejecuta solo cuando haces push a main
 
-# ¿QUÉ va a hacer? (Los trabajos o 'jobs')
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest # GitHub nos presta una computadora con Linux gratis
-    
+    runs-on: ubuntu-latest # GitHub usa una máquina Linux temporal
+
     steps:
-      # 1. Copia tu código de GitHub a la máquina virtual
       - name: Checkout del código
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3 # Descarga tu código del repositorio
 
-      # 2. CALIDAD DE CÓDIGO (Linter): Revisa errores y avisa la línea exacta del fallo
       - name: Instalar HTMLHint
-        run: npm install -g htmlhint
+        run: npm install -g htmlhint # Instala el linter HTML
 
-      # 3. EJECUTAR LINTER
       - name: Ejecutar Linter HTMLHint
-        run: htmlhint **/*.html
+        run: htmlhint "**/*.html" # Revisa errores en archivos HTML
 
-      # 4. AUTENTICACIÓN SEGURA: Inicia sesión en Docker Hub usando tus llaves ocultas
-      - name: Iniciar sesión en Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Construir imagen Docker local
+        run: docker build -t devopsjulio/devioz-proyecto:latest . # Crea la imagen sin subirla todavía
 
-      # 5. CONSTRUCCIÓN DE LA IMAGEN LOCAL: La prepara en la máquina de GitHub para evaluarla
-      - name: Construir imagen local para pruebas
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true # No la sube aún, primero se analiza
-          tags: devopsjulio/devioz-proyecto:latest
-
-      # 6. SEGURIDAD DE INFRAESTRUCTURA (Trivy): Escanea virus o fallos críticos en la imagen
       - name: Escanear imagen Docker con Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@master # Escanea vulnerabilidades en la imagen con trivy
         with:
-          image-ref: 'devopsjulio/devioz-proyecto:latest'
-          format: 'table'
-          exit-code: '1' # Si encuentra algo CRÍTICO, rompe el proceso y avisa al equipo
-          ignore-unfixed: true
-          severity: 'CRITICAL'
+          image-ref: 'devopsjulio/devioz-proyecto:latest' # Imagen que será analizada
+          format: 'table' # Muestra el resultado en tabla
+          exit-code: '1' # Si hay vulnerabilidad crítica, falla el pipeline
+          ignore-unfixed: true # Ignora fallos sin solución disponible
+          severity: 'CRITICAL' # Solo bloquea vulnerabilidades críticas
 
-      # 7. DESPLIEGUE SEGURO: Solo si pasó el Linter y pasó Trivy, se publica en internet
-      - name: Subir imagen limpia a Docker Hub
-        uses: docker/build-push-action@v4
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v2 # Login seguro usando Secrets
         with:
-          context: .
-          push: true
-          tags: devopsjulio/devioz-proyecto:latest
+          username: ${{ secrets.DOCKER_USERNAME }} # Usuario Docker Hub
+          password: ${{ secrets.DOCKER_PASSWORD }} # Token/clave Docker Hub
+
+      - name: Subir imagen limpia a Docker Hub
+        run: docker push devopsjulio/devioz-proyecto:latest # Sube la imagen solo si pasó linter y Trivy

@@ -1,13 +1,15 @@
-FROM php:8.1-apache
+FROM php:8.1-apache 
+# Imagen base con PHP 8.1 y Apache
 
-# 1. Actualizamos el sistema operativo Debian y parchamos sus vulnerabilidades de fábrica
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
-# 2. Habilitamos el módulo rewrite de Apache de forma correcta
-RUN a2enmod rewrite
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/* 
+# Actualiza paquetes y limpia caché
 
-# 3. Copiamos los archivos de tu landing page al servidor
+RUN a2enmod rewrite 
+# Activa rewrite de Apache
+
 COPY . /var/www/html/
+ # Copia el proyecto dentro del servidor Apache
 
-# 4. Exponemos el puerto estándar
-EXPOSE 80
+EXPOSE 80 
+# Expone el puerto web del contenedor
