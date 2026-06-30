@@ -1,0 +1,19 @@
+# Git
+.git
+.github
+
+# Claves privadas
+*.pem
+
+# Docker Compose (solo para desarrollo local)
+docker-compose.yml
+
+# Carpeta de Prometheus (si solo la usas localmente)
+prometheus/
+
+# Dependencias locales
+node_modules/
+vendor/
+
+# Variables de entorno
+.env

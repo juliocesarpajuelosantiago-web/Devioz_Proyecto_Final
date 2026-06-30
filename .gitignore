@@ -1,0 +1,15 @@
+# Claves privadas
+*.pem
+
+# Variables de entorno
+.env
+
+# Dependencias Node.js
+node_modules/
+
+# Dependencias PHP (si en el futuro usas Composer)
+vendor/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
