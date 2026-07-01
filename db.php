@@ -1,15 +1,13 @@
 <?php
-// Credenciales estándar de XAMPP
-$servidor = "db";   // ← de "localhost" a "db"
-$usuario  = "root";
-$password = ""; 
-$base_datos = "devioz_db";
 
-// Crear la conexión
+$servidor = getenv('DB_HOST');
+$usuario = getenv('DB_USER');
+$password = getenv('DB_PASSWORD');
+$base_datos = getenv('DB_NAME');
+
 $conexion = mysqli_connect($servidor, $usuario, $password, $base_datos);
 
-// Verificar si hay error
 if (!$conexion) {
-    die("La conexión falló: " . mysqli_connect_error());
+    die("Error de conexión: " . mysqli_connect_error());
 }
 ?>

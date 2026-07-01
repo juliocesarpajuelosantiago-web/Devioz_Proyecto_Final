@@ -1,39 +1,38 @@
-name: Deploy Automático en AWS # Nombre del workflow CD
+name: Deploy Automático en AWS # Workflow de despliegue a AWS
 
 on:
   workflow_run:
     workflows: ["Publicar en Docker Hub"] # Se ejecuta después del CI
     types:
-      - completed # Solo cuando el workflow anterior termina
+      - completed
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # GitHub usa una máquina Linux temporal
+    runs-on: ubuntu-latest # Máquina temporal de GitHub
 
-    if: ${{ github.event.workflow_run.conclusion == 'success' }} # Solo despliega si el CI fue exitoso
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} # Solo si el CI fue exitoso
 
     steps:
       - name: Desplegar en servidor vía SSH
-        uses: appleboy/ssh-action@master # Conecta por SSH a tu EC2
+        uses: appleboy/ssh-action@master # Conecta GitHub Actions con EC2 por SSH
         with:
           host: ${{ secrets.SERVER_IP }} # IP pública de la EC2
-          username: ${{ secrets.SSH_USER }} # Usuario: ec2-user
-          key: ${{ secrets.AWS_SSH_KEY }} # Clave privada guardada en GitHub Secrets
+          username: ${{ secrets.SSH_USER }} # Usuario EC2: ec2-user
+          key: ${{ secrets.AWS_SSH_KEY }} # Llave privada SSH guardada como secret
           script: |
-            docker pull devopsjulio/devioz-proyecto:latest # Descarga la última imagen desde Docker Hub
+            docker pull devopsjulio/devioz-proyecto:latest # Descarga la imagen más reciente
 
             docker stop mi-sitio || true # Detiene el contenedor anterior si existe
             docker rm mi-sitio || true # Elimina el contenedor anterior si existe
 
-            docker run -d --restart unless-stopped -p 80:80 --name mi-sitio devopsjulio/devioz-proyecto:latest # Levanta la nueva versión y la deja auto-reiniciable
+            docker run -d \
+              --restart unless-stopped \
+              -p 80:80 \
+              --name mi-sitio \
+              -e DB_HOST="${{ secrets.DB_HOST }}" \
+              -e DB_USER="${{ secrets.DB_USER }}" \
+              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+              -e DB_NAME="${{ secrets.DB_NAME }}" \
+              devopsjulio/devioz-proyecto:latest
 
-            docker ps # Muestra el contenedor corriendo como evidencia
-
-          # 1. Descarga la nueva imagen actualizada desde Docker Hub
-        
-          # 2. Detiene y elimina el contenedor anterior si existe
- 
-
-          # 3. Lanza la nueva versión del contenedor
-          # Mapeamos el puerto 80 del servidor al puerto 80 del contenedor
-         
+            docker ps # Evidencia del contenedor corriendo
