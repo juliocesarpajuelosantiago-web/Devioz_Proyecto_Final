@@ -1,0 +1,40 @@
+services:
+  web: # Servicio principal de la página web PHP
+    image: devopsjulio/devioz-proyecto:latest # Usa la imagen publicada en Docker Hub
+    container_name: mi-sitio # Nombre fijo del contenedor web
+    restart: unless-stopped # Se reinicia solo si la EC2 o Docker se reinicia
+    ports:
+      - "80:80" # Expone la web en http://IP_PUBLICA
+    environment:
+      DB_HOST: ${DB_HOST} # Endpoint de RDS MySQL
+      DB_USER: ${DB_USER} # Usuario de la base de datos
+      DB_PASSWORD: ${DB_PASSWORD} # Contraseña de la base de datos
+      DB_NAME: ${DB_NAME} # Nombre de la base de datos
+
+  prometheus: # Servicio que recolecta métricas
+    image: prom/prometheus:latest # Imagen oficial de Prometheus
+    container_name: prometheus # Nombre del contenedor
+    restart: unless-stopped # Reinicio automático controlado
+    ports:
+      - "9090:9090" # Puerto web de Prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml # Configuración de métricas
+
+  grafana: # Servicio visual para dashboards
+    image: grafana/grafana:latest # Imagen oficial de Grafana
+    container_name: grafana # Nombre del contenedor
+    restart: unless-stopped # Reinicio automático controlado
+    ports:
+      - "3000:3000" # Puerto web de Grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER} # Usuario admin desde Secrets
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD} # Password admin desde Secrets
+    depends_on:
+      - prometheus # Grafana inicia después de Prometheus
+
+  node-exporter: # Servicio que expone métricas de la EC2
+    image: prom/node-exporter:latest # Imagen oficial de Node Exporter
+    container_name: node-exporter # Nombre del contenedor
+    restart: unless-stopped # Reinicio automático controlado
+    ports:
+      - "9100:9100" # Puerto donde Prometheus leerá métricas

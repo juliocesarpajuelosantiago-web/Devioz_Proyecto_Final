@@ -1,38 +1,67 @@
-name: Deploy Automático en AWS # Workflow de despliegue a AWS
+name: Deploy Automático en AWS # Nombre del workflow que aparecerá en GitHub Actions
 
 on:
   workflow_run:
-    workflows: ["Publicar en Docker Hub"] # Se ejecuta después del CI
+    workflows: ["Publicar en Docker Hub"] # Se ejecuta cuando termina el workflow de CI
     types:
-      - completed
+      - completed # Solo cuando el workflow finaliza
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # Máquina temporal de GitHub
+    runs-on: ubuntu-latest # GitHub crea una máquina Ubuntu temporal
 
-    if: ${{ github.event.workflow_run.conclusion == 'success' }} # Solo si el CI fue exitoso
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} # Solo despliega si el CI terminó correctamente
 
     steps:
-      - name: Desplegar en servidor vía SSH
-        uses: appleboy/ssh-action@master # Conecta GitHub Actions con EC2 por SSH
+
+      - name: Descargar el repositorio
+        uses: actions/checkout@v3 # Descarga todos los archivos del repositorio en la máquina temporal
+
+      - name: Copiar archivos de configuración hacia la EC2
+        uses: appleboy/scp-action@master # Usa SCP (Secure Copy) para copiar archivos al servidor
         with:
-          host: ${{ secrets.SERVER_IP }} # IP pública de la EC2
-          username: ${{ secrets.SSH_USER }} # Usuario EC2: ec2-user
-          key: ${{ secrets.AWS_SSH_KEY }} # Llave privada SSH guardada como secret
+          host: ${{ secrets.SERVER_IP }} # Dirección IP pública de la EC2
+          username: ${{ secrets.SSH_USER }} # Usuario del servidor (ec2-user)
+          key: ${{ secrets.AWS_SSH_KEY }} # Llave privada SSH almacenada como Secret
+
+          # Archivos que queremos copiar al servidor
+          source: |
+            docker-compose.aws.yml
+            prometheus/prometheus.yml
+
+          # Carpeta destino dentro de la EC2
+          target: /home/ec2-user/devioz-site
+
+      - name: Desplegar aplicación mediante Docker Compose
+        uses: appleboy/ssh-action@master # Se conecta por SSH para ejecutar comandos dentro de la EC2
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+
           script: |
-            docker pull devopsjulio/devioz-proyecto:latest # Descarga la imagen más reciente
+            # Entramos a la carpeta del proyecto
+            cd /home/ec2-user/devioz-site
 
-            docker stop mi-sitio || true # Detiene el contenedor anterior si existe
-            docker rm mi-sitio || true # Elimina el contenedor anterior si existe
+            # Creamos el archivo .env usando los Secrets de GitHub
+            cat > .env <<EOF
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            GRAFANA_USER=${{ secrets.GRAFANA_USER }}
+            GRAFANA_PASSWORD=${{ secrets.GRAFANA_PASSWORD }}
+            EOF
 
-            docker run -d \
-              --restart unless-stopped \
-              -p 80:80 \
-              --name mi-sitio \
-              -e DB_HOST="${{ secrets.DB_HOST }}" \
-              -e DB_USER="${{ secrets.DB_USER }}" \
-              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-              -e DB_NAME="${{ secrets.DB_NAME }}" \
-              devopsjulio/devioz-proyecto:latest
+            # Descargamos siempre la última imagen publicada en Docker Hub
+            docker pull devopsjulio/devioz-proyecto:latest
 
-            docker ps # Evidencia del contenedor corriendo
+            # Detenemos y eliminamos el contenedor anterior creado con docker run
+            docker stop mi-sitio || true
+            docker rm mi-sitio || true
+
+            # Levantamos el stack completo: web, Prometheus, Grafana y Node Exporter
+            docker compose -f docker-compose.aws.yml up -d
+
+            # Mostramos evidencia de los contenedores ejecutándose
+            docker ps
